@@ -1,0 +1,227 @@
+<template>
+  <v-layout class="rounded rounded-md fill-height">
+    <v-navigation-drawer
+      expand-on-hover
+      rail
+    >
+      <v-list>
+        <v-list-item
+          prepend-avatar="https://cdn.pixabay.com/photo/2021/11/12/03/04/woman-6787784_1280.png"
+          subtitle="pingtrans@gmailcom"
+          title="Ping's"
+        ></v-list-item>
+      </v-list>
+      <v-divider></v-divider>
+
+      <v-list density="compact" nav>
+        <v-list-item prepend-icon="mdi-folder" title="My Files" value="myfiles"></v-list-item>
+        <v-list-item prepend-icon="mdi-account-multiple" title="Shared" value="shared"></v-list-item>
+        <v-list-item prepend-icon="mdi-star" title="Starred" value="starred"></v-list-item>
+      </v-list>
+    </v-navigation-drawer>
+    <v-main class="d-flex">
+
+
+      <!--      <v-btn :onclick="deepLRequest">request test</v-btn>-->
+
+      <v-container>
+        <v-responsive
+          class="align-centerfill-height mx-auto"
+          max-width="90%"
+        >
+          <div class="py-4"/>
+          <v-row>
+            <v-col cols="4">
+              <v-combobox
+                chips
+                label="翻译语言"
+                v-model="select"
+                :items="supportLanguage"
+                variant="outlined"
+                density="compact"
+              ></v-combobox>
+            </v-col>
+<!--            <v-col cols="2">-->
+<!--              <v-file-input-->
+<!--                clearable-->
+<!--                variant="outlined"-->
+<!--                density="compact"-->
+<!--                label="批量翻译"-->
+<!--              ></v-file-input>-->
+<!--            </v-col>-->
+
+<!--            <v-col cols="4">-->
+<!--              <v-btn-->
+<!--                id="menu-activator"-->
+<!--                icon="mdi-cog"-->
+<!--                size="small"-->
+<!--              ></v-btn>-->
+<!--              <v-menu activator="#menu-activator"-->
+<!--                      location="end">-->
+<!--                <v-list>-->
+<!--                  <v-list-item-->
+<!--                    v-for="(item, index) in items"-->
+<!--                    :key="index"-->
+<!--                    :value="index"-->
+<!--                  >-->
+<!--                    <v-list-item-title>{{ item.title }}</v-list-item-title>-->
+<!--                  </v-list-item>-->
+<!--                </v-list>-->
+<!--              </v-menu>-->
+<!--            </v-col>-->
+
+
+            <v-col cols="10" style="margin-top: -30px">
+              <v-textarea label="翻译文本" variant="outlined" v-model="text"></v-textarea>
+            </v-col>
+
+            <v-col cols="4">
+              <v-combobox
+                v-model="target"
+                :items="supportLanguage"
+                label="目标语言"
+                variant="outlined"
+                density="compact"
+                chips
+                multiple
+              ></v-combobox>
+
+            </v-col>
+            <v-col cols="8">
+              <v-btn @click="translate" style="margin-right: 10px">翻译</v-btn>
+<!--              <v-btn>导出 Excel</v-btn>-->
+            </v-col>
+            <v-col cols="4"
+                   v-for="(item, index) in showResult"
+                   :key="index"
+            >
+              <v-card
+                :title="item.title"
+              >
+                <v-card-text
+                  v-for="(content, index) in item.content"
+                  :key="index"
+                  :class="{ 'pb-0': index !== item.content.length - 1 }"
+                >
+                  {{ content }}
+                </v-card-text>
+              </v-card>
+            </v-col>
+          </v-row>
+        </v-responsive>
+      </v-container>
+
+
+    </v-main>
+  </v-layout>
+</template>
+
+<script>
+import axios from "axios";
+import {TranslatorsResult} from "@/class/Moudles";
+
+
+const apiKey = '';
+// 创建一个axios实例，可以设置默认的配置
+const request = axios.create({
+  timeout: 30000,  // 设置超时时间
+  headers: {
+    'Content-Type': 'application/json',
+    'Access-Control-Allow-Origin': '*',
+    'Authorization': apiKey,
+    // 可以在这里添加其他需要的头部配置
+  },
+});
+
+
+const supportLangMap = {
+  '🇨🇳 汉语': 'ZH',
+  '🇬🇧 英语': 'EN',
+  '🇩🇪 德语': 'DE',
+  '🇷🇺 俄语': 'RU',
+  '🇫🇷 法语': 'FR',
+  '🇵🇹 葡萄牙': 'PT',
+  '🇪🇸 西班牙': 'ES'
+}
+
+export default {
+  data: () => ({
+    items: [
+      {title: 'Click Me'},
+      {title: 'Click Me'},
+      {title: 'Click Me'},
+      {title: 'Click Me 2'},
+    ],
+    supportLanguage: Object.keys(supportLangMap),
+    select: null,
+    text: null,
+    // 选择的语言
+    target: [],
+    request: null,
+    desserts: [
+      {}
+    ],
+    showResult: []
+  }),
+
+  onMounted() {
+    console.log("mounted")
+
+  },
+  methods: {
+    // 调用翻译
+    translate() {
+      console.log("translate")
+      let text = this.text;
+      console.log(text)
+      // 待翻译文本
+      if (text === null || text === '' || this.target.length === 0) {
+        return
+      }
+
+      this.showResult = []
+
+      let tranText = text.split('\n')
+      // 展示原文本
+      this.showResult.push(new TranslatorsResult('原文', tranText))
+      console.log("this.showResult")
+      console.log(this.showResult)
+      console.log('选择的语言:' + this.target)
+      this.target = this.target.filter(item => item !== this.select)
+
+      this.target.forEach((lang) => {
+        console.log('目标语言:' + lang)
+        this.deepLRequest(tranText, this.select, lang)
+      })
+
+
+      // this.deepLRequest(tranText)
+
+    },
+
+    deepLRequest(tranText, sourceLang, targetLang) {
+      console.log("API test")
+      request.post('/api/translate', {
+        text: tranText,
+        source_lang: supportLangMap[sourceLang],
+        target_lang: supportLangMap[targetLang]
+      })
+        .then(({data}) => {
+          console.log(data);
+          let contents = [];
+          data.translations.forEach((item) => {
+            console.log(item.text);
+            contents.push(item.text);
+          });
+          this.showResult.push(new TranslatorsResult(targetLang, contents));
+        })
+        .catch((error) => {
+          console.log(error);
+        });
+    }
+  }
+}
+</script>
+
+<style scoped>
+</style>
