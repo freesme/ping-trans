@@ -41,34 +41,34 @@
                 density="compact"
               ></v-combobox>
             </v-col>
-<!--            <v-col cols="2">-->
-<!--              <v-file-input-->
-<!--                clearable-->
-<!--                variant="outlined"-->
-<!--                density="compact"-->
-<!--                label="批量翻译"-->
-<!--              ></v-file-input>-->
-<!--            </v-col>-->
+            <!--            <v-col cols="2">-->
+            <!--              <v-file-input-->
+            <!--                clearable-->
+            <!--                variant="outlined"-->
+            <!--                density="compact"-->
+            <!--                label="批量翻译"-->
+            <!--              ></v-file-input>-->
+            <!--            </v-col>-->
 
-<!--            <v-col cols="4">-->
-<!--              <v-btn-->
-<!--                id="menu-activator"-->
-<!--                icon="mdi-cog"-->
-<!--                size="small"-->
-<!--              ></v-btn>-->
-<!--              <v-menu activator="#menu-activator"-->
-<!--                      location="end">-->
-<!--                <v-list>-->
-<!--                  <v-list-item-->
-<!--                    v-for="(item, index) in items"-->
-<!--                    :key="index"-->
-<!--                    :value="index"-->
-<!--                  >-->
-<!--                    <v-list-item-title>{{ item.title }}</v-list-item-title>-->
-<!--                  </v-list-item>-->
-<!--                </v-list>-->
-<!--              </v-menu>-->
-<!--            </v-col>-->
+            <!--            <v-col cols="4">-->
+            <!--              <v-btn-->
+            <!--                id="menu-activator"-->
+            <!--                icon="mdi-cog"-->
+            <!--                size="small"-->
+            <!--              ></v-btn>-->
+            <!--              <v-menu activator="#menu-activator"-->
+            <!--                      location="end">-->
+            <!--                <v-list>-->
+            <!--                  <v-list-item-->
+            <!--                    v-for="(item, index) in items"-->
+            <!--                    :key="index"-->
+            <!--                    :value="index"-->
+            <!--                  >-->
+            <!--                    <v-list-item-title>{{ item.title }}</v-list-item-title>-->
+            <!--                  </v-list-item>-->
+            <!--                </v-list>-->
+            <!--              </v-menu>-->
+            <!--            </v-col>-->
 
 
             <v-col cols="10" style="margin-top: -30px">
@@ -89,7 +89,7 @@
             </v-col>
             <v-col cols="8">
               <v-btn @click="translate" style="margin-right: 10px">翻译</v-btn>
-<!--              <v-btn>导出 Excel</v-btn>-->
+              <v-btn @click="exportExcel">导出 Excel</v-btn>
             </v-col>
             <v-col cols="4"
                    v-for="(item, index) in showResult"
@@ -118,7 +118,9 @@
 
 <script>
 import axios from "axios";
+import {read, writeFileXLSX} from "xlsx";
 import {TranslatorsResult} from "@/class/Moudles";
+import * as XLSX from "xlsx";
 
 
 const apiKey = '';
@@ -161,7 +163,13 @@ export default {
     desserts: [
       {}
     ],
-    showResult: []
+    showResult: [],
+
+    rows: [
+      {name: "George Washington", birthday: "1732-02-22"},
+      {name: "John Adams", birthday: "1735-10-19"}
+    ]
+
   }),
 
   onMounted() {
@@ -169,6 +177,40 @@ export default {
 
   },
   methods: {
+    exportExcel() {
+      console.log("exportExcel function")
+      console.log(this.showResult)
+
+      if (this.showResult === null) {
+        return
+      }
+      // 创建工作簿和工作表
+      const wb = XLSX.utils.book_new();
+      // const ws_data = [
+      //   ["Name", "Age", "Location"],
+      //   ["Alice", 25, "New York"],
+      //   ["Bob", 30, "Los Angeles"]
+      // ];
+      const ws_data = []
+
+      console.log(JSON.stringify(this.showResult))
+
+      // [{"title":"原文","content":["你好","同类"]},{"title":"🇬🇧 英语","content":["How are you?","same type"]},{"title":"🇷🇺 俄语","content":["Как дела?","один тип"]}]
+      const title = this.showResult.map(item => item.title)
+      ws_data.push(title)
+
+      const maxContentLength = Math.max(...this.showResult.map(item => item.content.length));
+      for (let i = 0; i < maxContentLength; i++) {
+        const row = this.showResult.map(item => item.content[i] || ""); // 用空字符串填充缺失的内容
+        ws_data.push(row);
+      }
+
+      const ws = XLSX.utils.aoa_to_sheet(ws_data);
+      XLSX.utils.book_append_sheet(wb, ws, "Sheet1");
+
+      // 生成Excel文件并触发下载
+      XLSX.writeFile(wb, "ExampleData.xlsx");
+    },
     // 调用翻译
     translate() {
       console.log("translate")
@@ -189,18 +231,25 @@ export default {
       console.log('选择的语言:' + this.target)
       this.target = this.target.filter(item => item !== this.select)
 
-      this.target.forEach((lang) => {
-        console.log('目标语言:' + lang)
-        this.deepLRequest(tranText, this.select, lang)
-      })
+      let requests = this.target.map((lang) => {
+        return new Promise((resolve, reject) => {
+          console.log('目标语言:' + lang);
+          this.deepLRequest(tranText, this.select, lang, resolve, reject);
+        });
+      });
 
-
-      // this.deepLRequest(tranText)
-
+      Promise.all(requests)
+        .then(() => {
+          console.log(this.showResult)
+          console.log(this.target)
+        })
+        .catch((error) => {
+          console.error("一个或多个请求失败:", error);
+        });
     },
 
-    deepLRequest(tranText, sourceLang, targetLang) {
-      console.log("API test")
+    deepLRequest(tranText, sourceLang, targetLang, resolve, reject) {
+      console.log("API test");
       request.post('/api/translate', {
         text: tranText,
         source_lang: supportLangMap[sourceLang],
@@ -214,9 +263,11 @@ export default {
             contents.push(item.text);
           });
           this.showResult.push(new TranslatorsResult(targetLang, contents));
+          resolve();
         })
         .catch((error) => {
-          console.log(error);
+          console.error(error);
+          reject(error);
         });
     }
   }

@@ -68,14 +68,15 @@ export default defineConfig({
       '.vue',
     ],
   },
-  // server: {
-  //   port: 3000,
-  //   proxy: {
-  //     '/api': {
-  //       target: 'https://api-free.deepl.com/v2',
-  //       changeOrigin: true,
-  //       rewrite: (path) => path.replace(/^\/api/, '') // 可选，路径重写
-  //     }
-  //   }
-  // },
+  // 只在本地开发调试时使用
+  server: {
+    port: 3000,
+    proxy: {
+      '/api': {
+        target: 'https://api-free.deepl.com/v2',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api/, '') // 可选，路径重写
+      }
+    }
+  },
 })
