@@ -118,7 +118,6 @@
 
 <script>
 import axios from "axios";
-import {read, writeFileXLSX} from "xlsx";
 import {TranslatorsResult} from "@/class/Moudles";
 import * as XLSX from "xlsx";
 
@@ -143,7 +142,10 @@ const supportLangMap = {
   '🇷🇺 俄语': 'RU',
   '🇫🇷 法语': 'FR',
   '🇵🇹 葡萄牙': 'PT',
-  '🇪🇸 西班牙': 'ES'
+  '🇪🇸 西班牙': 'ES',
+  '🇯🇵 日语': 'JA',
+  '🇹🇼 繁体中文': 'ZH-HANT',
+  '🇮🇹 意大利': 'IT',
 }
 
 export default {

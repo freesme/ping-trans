@@ -68,7 +68,7 @@ export default defineConfig({
       '.vue',
     ],
   },
-  // 只在本地开发调试时使用
+  // FIXME 只在本地开发调试时使用
   server: {
     port: 3000,
     proxy: {
